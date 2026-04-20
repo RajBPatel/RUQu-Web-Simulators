@@ -103,7 +103,7 @@
             </div>
             <button onclick="document.getElementById('physics-modal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-5 py-2.5 rounded-lg shadow border border-blue-500 transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
                 Physics Reference
             </button>
@@ -313,10 +313,14 @@
         
         <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 flex flex-col justify-center">
             <h3 class="text-lg font-semibold text-white border-b border-gray-600 pb-2 mb-4">System Analytics</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 text-center">
                 <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
                     <span class="text-sm font-semibold text-gray-400 block">S-I Walkoff</span>
                     <span id="out-walkoff" class="text-xl font-mono text-white">2.80 ps</span>
+                </div>
+                <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
+                    <span class="text-sm font-semibold text-gray-400 block" title="Coherence length of the filtered photons">Coh. Length</span>
+                    <span id="out-coherence-length" class="text-xl font-mono text-white">240.3 &mu;m</span>
                 </div>
                 <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
                     <span class="text-sm font-semibold text-gray-400 block">SGVM Asym</span>
@@ -423,6 +427,7 @@
 
         const outputs = {
             walkoff: document.getElementById('out-walkoff'), 
+            coherence_length: document.getElementById('out-coherence-length'),
             sgvm: document.getElementById('out-sgvm'),
             overlap: document.getElementById('out-overlap'),
             purity: document.getElementById('out-purity'),
@@ -513,6 +518,11 @@
             outputs.sgvm.textContent = sgvm_asym.toFixed(3) + ' ps/mm';
             outputs.sgvm.className = `text-xl font-mono ${sgvm_asym < 0.05 ? 'text-blue-400' : 'text-red-400'}`;
             outputs.overlap.textContent = (spatial_overlap * 100).toFixed(1) + '%';
+            
+            // Calculate and display Coherence Length
+            const coherenceTime = Math.max(0.01, (lambda_0 * lambda_0) / (3e5 * dLambda)); 
+            const coherenceLength_um = coherenceTime * c_mm_ps * 1000;
+            if (outputs.coherence_length) outputs.coherence_length.textContent = coherenceLength_um.toFixed(1) + ' \u03BCm';
 
             // High-res grid to prevent aliasing
             const size = 150; 
