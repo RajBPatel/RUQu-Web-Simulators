@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RUQu OPL Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1f2937;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #4b5563;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #6b7280;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-gray-100 font-sans p-4 md:p-8 min-h-screen">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Header & Global Settings -->
+      <div
+        class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4"
+      >
+        <div>
+          <h1 class="text-3xl font-bold text-blue-400">RUQu OPL Calculator</h1>
+          <p class="text-gray-400 text-sm mt-1">
+            Calculate Optical Path Length and Time of Flight for ultrafast
+            setups.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div
+            class="flex items-center gap-2 bg-gray-900 p-2 rounded-lg border border-gray-700"
+          >
+            <label for="wavelength" class="font-semibold text-gray-300 text-sm"
+              >λ (nm):</label
+            >
+            <input
+              type="number"
+              id="wavelength"
+              value="1550"
+              class="bg-gray-700 text-white rounded px-2 py-1 w-24 border border-gray-600 focus:outline-none focus:border-blue-500"
+              onchange="renderPaths()"
+            />
+          </div>
+          <button
+            onclick="saveConfig()"
+            class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 px-4 rounded transition shadow"
+          >
+            Save Setup
+          </button>
+          <label
+            class="bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold py-2 px-4 rounded transition shadow cursor-pointer"
+          >
+            Load Setup
+            <input
+              type="file"
+              accept=".json"
+              hidden
+              onchange="loadConfig(event)"
+            />
+          </label>
+        </div>
+      </div>
+
+      <!-- Add Element Control Panel -->
+      <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+        <h2
+          class="text-xl font-bold mb-4 text-gray-200 border-b border-gray-700 pb-2"
+        >
+          Add Optical Element
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+          <div class="flex flex-col gap-1 md:col-span-1">
+            <label class="text-sm text-gray-400">Component Type</label>
+            <select
+              id="comp-type"
+              class="bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:outline-none focus:border-blue-500"
+              onchange="buildForm()"
+            >
+              <option value="freespace">Free Space</option>
+              <option value="fiber">Optical Fiber</option>
+              <option value="displacer">Beam Displacer</option>
+              <option value="beamsplitter">Beamsplitter Cube</option>
+              <option value="polarizer">GT Polarizer</option>
+              <option value="waveplate">Waveplate (ZO)</option>
+              <option value="lens">Lens (Thorlabs)</option>
+              <option value="custom">Custom Material</option>
+            </select>
+          </div>
+
+          <div
+            class="flex flex-col gap-1 md:col-span-3"
+            id="dynamic-options-container"
+          >
+            <!-- Populated dynamically by JS based on selection -->
+          </div>
+
+          <div class="flex flex-col gap-1 md:col-span-1">
+            <label class="text-sm text-gray-400">Length/Thickness</label>
+            <div class="flex">
+              <input
+                type="number"
+                id="comp-length"
+                class="bg-gray-700 text-white rounded-l px-2 py-2 border border-gray-600 w-full focus:outline-none focus:border-blue-500"
+                step="any"
+                min="0"
+              />
+              <select
+                id="comp-unit"
+                class="bg-gray-600 text-white rounded-r px-1 border-y border-r border-gray-600 focus:outline-none text-xs"
+              >
+                <option value="1">mm</option>
+                <option value="10">cm</option>
+                <option value="1000">m</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-2 md:col-span-1">
+            <button
+              onclick="addElement(1)"
+              class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-2 rounded transition shadow"
+            >
+              + P1
+            </button>
+            <button
+              onclick="addElement(2)"
+              class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-2 rounded transition shadow"
+            >
+              + P2
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paths Display -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Path 1 -->
+        <div
+          class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 flex flex-col"
+        >
+          <div
+            class="p-4 border-b border-gray-700 bg-gray-850 rounded-t-xl flex justify-between items-center"
+          >
+            <h3 class="text-xl font-bold text-blue-400">Path 1</h3>
+            <button
+              onclick="clearPath(1)"
+              class="text-xs text-red-400 hover:text-red-300"
+            >
+              Clear All
+            </button>
+          </div>
+          <div
+            class="p-4 flex-1 overflow-y-auto max-h-80"
+            id="path1-list"
+          ></div>
+          <div class="p-4 border-t border-gray-700 bg-gray-900 rounded-b-xl">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Physical Length:</span>
+              <span id="p1-phys" class="font-mono">0.00 mm</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Optical Path Length:</span>
+              <span id="p1-opl" class="font-mono text-blue-300 font-bold"
+                >0.00 mm</span
+              >
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Time of Flight:</span>
+              <span id="p1-time" class="font-mono text-green-400 font-bold"
+                >0.00 ps</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Path 2 -->
+        <div
+          class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 flex flex-col"
+        >
+          <div
+            class="p-4 border-b border-gray-700 bg-gray-850 rounded-t-xl flex justify-between items-center"
+          >
+            <h3 class="text-xl font-bold text-purple-400">Path 2</h3>
+            <button
+              onclick="clearPath(2)"
+              class="text-xs text-red-400 hover:text-red-300"
+            >
+              Clear All
+            </button>
+          </div>
+          <div
+            class="p-4 flex-1 overflow-y-auto max-h-80"
+            id="path2-list"
+          ></div>
+          <div class="p-4 border-t border-gray-700 bg-gray-900 rounded-b-xl">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Physical Length:</span>
+              <span id="p2-phys" class="font-mono">0.00 mm</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Optical Path Length:</span>
+              <span id="p2-opl" class="font-mono text-purple-300 font-bold"
+                >0.00 mm</span
+              >
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Time of Flight:</span>
+              <span id="p2-time" class="font-mono text-green-400 font-bold"
+                >0.00 ps</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delta / Comparison -->
+      <div
+        class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 text-center"
+      >
+        <h2 class="text-xl font-bold text-white mb-4">
+          Interferometric Difference (P1 - P2)
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Δ Physical Length</div>
+            <div class="text-xl font-mono text-white mt-1" id="delta-phys">
+              0.00 mm
+            </div>
+          </div>
+          <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Δ Optical Path Length</div>
+            <div
+              class="text-xl font-mono text-blue-400 mt-1 font-bold"
+              id="delta-opl"
+            >
+              0.00 mm
+            </div>
+          </div>
+          <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+            <div class="text-gray-400 text-sm">Δ Time Delay</div>
+            <div
+              class="text-xl font-mono text-green-400 mt-1 font-bold"
+              id="delta-time"
+            >
+              0.00 ps
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const C = 0.299792458; // Speed of light in mm/ps
+
+      // Expanded interpolation tables for arbitrary wavelength support (nm: index)
+      const materials = {
+        Air: { 400: 1.00028, 800: 1.00027, 1550: 1.00027, 2000: 1.00027 },
+        "SMF-28": { 400: 1.47, 800: 1.453, 1550: 1.444, 2000: 1.438 },
+        PM1550: { 400: 1.47, 800: 1.453, 1550: 1.444, 2000: 1.438 },
+        PM780: { 400: 1.472, 800: 1.455, 1550: 1.446, 2000: 1.44 },
+        "780HP": { 400: 1.472, 800: 1.455, 1550: 1.446, 2000: 1.44 },
+        SM800: { 400: 1.472, 800: 1.455, 1550: 1.446, 2000: 1.44 },
+        "Calcite (o-ray)": { 400: 1.68, 800: 1.65, 1550: 1.63, 2000: 1.62 },
+        "Calcite (e-ray)": { 400: 1.49, 800: 1.48, 1550: 1.47, 2000: 1.465 },
+        "a-BBO (o-ray)": { 400: 1.69, 800: 1.66, 1550: 1.64, 2000: 1.63 },
+        "a-BBO (e-ray)": { 400: 1.55, 800: 1.54, 1550: 1.52, 2000: 1.515 },
+        "N-BK7": { 400: 1.5308, 800: 1.5108, 1550: 1.5009, 2000: 1.4939 },
+        "UV Fused Silica": {
+          400: 1.4701,
+          800: 1.4533,
+          1550: 1.444,
+          2000: 1.4381,
+        },
+        "Quartz (o-ray)": { 400: 1.557, 800: 1.538, 1550: 1.527, 2000: 1.52 },
+        "Quartz (e-ray)": { 400: 1.566, 800: 1.547, 1550: 1.536, 2000: 1.529 },
+        "S-LAH64": { 400: 1.82, 800: 1.77, 1550: 1.75, 2000: 1.74 },
+        "D-ZK3": { 400: 1.602, 800: 1.583, 1550: 1.571, 2000: 1.566 },
+        "N-SF11": { 400: 1.834, 800: 1.764, 1550: 1.743, 2000: 1.737 },
+        CaF2: { 400: 1.442, 800: 1.43, 1550: 1.426, 2000: 1.424 },
+      };
+
+      const waveplates = {
+        775: { HWP: 1.51, QWP: 1.5 },
+        780: { HWP: 2.01, QWP: 1.99 },
+        830: { HWP: 1.85, QWP: 1.83 },
+        930: { HWP: 1.95, QWP: 1.92 },
+        1550: { HWP: 1.65, QWP: 1.62 },
+      };
+
+      const lenses = {
+        "Plano-Convex": [
+          { name: "LA1116 (f=20.0)", mat: "N-BK7", ct: 5.8 },
+          { name: "LA1074 (f=25.4)", mat: "N-BK7", ct: 5.3 },
+          { name: "LA1131 (f=50.0)", mat: "N-BK7", ct: 4.1 },
+          { name: "LA1213 (f=75.0)", mat: "N-BK7", ct: 3.6 },
+          { name: "LA1509 (f=100.0)", mat: "N-BK7", ct: 3.6 },
+          { name: "LA1225 (f=150.0)", mat: "N-BK7", ct: 2.7 },
+          { name: "LA1708 (f=200.0)", mat: "N-BK7", ct: 2.8 },
+          { name: "LA1229 (f=250.0)", mat: "N-BK7", ct: 2.4 },
+          { name: "LA1484 (f=300.0)", mat: "N-BK7", ct: 2.5 },
+          { name: "LA1256 (f=400.0)", mat: "N-BK7", ct: 2.2 },
+          { name: "LA1908 (f=500.0)", mat: "N-BK7", ct: 2.1 },
+          { name: "LA1461 (f=750.0)", mat: "N-BK7", ct: 2.1 },
+          { name: "LA1172 (f=1000.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LA4158 (f=20.0)", mat: "UV Fused Silica", ct: 7.5 },
+          { name: "LA4040 (f=25.4)", mat: "UV Fused Silica", ct: 6.1 },
+          { name: "LA4148 (f=50.0)", mat: "UV Fused Silica", ct: 3.6 },
+          { name: "LA4052 (f=75.0)", mat: "UV Fused Silica", ct: 4.3 },
+          { name: "LA4380 (f=100.0)", mat: "UV Fused Silica", ct: 3.6 },
+          { name: "LA4743 (f=150.0)", mat: "UV Fused Silica", ct: 2.7 },
+          { name: "LA4600 (f=200.0)", mat: "UV Fused Silica", ct: 2.8 },
+          { name: "LA4855 (f=250.0)", mat: "UV Fused Silica", ct: 2.4 },
+          { name: "LA4579 (f=300.0)", mat: "UV Fused Silica", ct: 2.5 },
+          { name: "LA4249 (f=500.0)", mat: "UV Fused Silica", ct: 2.1 },
+          { name: "LA4313 (f=1000.0)", mat: "UV Fused Silica", ct: 2.0 },
+        ],
+        "Bi-Convex": [
+          { name: "LB1761 (f=25.4)", mat: "N-BK7", ct: 7.2 },
+          { name: "LB1144 (f=35.0)", mat: "N-BK7", ct: 5.6 },
+          { name: "LB1471 (f=50.0)", mat: "N-BK7", ct: 4.2 },
+          { name: "LB1625 (f=75.0)", mat: "N-BK7", ct: 3.2 },
+          { name: "LB1676 (f=100.0)", mat: "N-BK7", ct: 3.1 },
+          { name: "LB1199 (f=150.0)", mat: "N-BK7", ct: 2.5 },
+          { name: "LB1945 (f=200.0)", mat: "N-BK7", ct: 2.3 },
+          { name: "LB1757 (f=250.0)", mat: "N-BK7", ct: 2.2 },
+          { name: "LB1723 (f=300.0)", mat: "N-BK7", ct: 2.1 },
+          { name: "LB1253 (f=400.0)", mat: "N-BK7", ct: 2.1 },
+          { name: "LB1869 (f=500.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LB1441 (f=750.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LB1027 (f=1000.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LB4015 (f=25.4)", mat: "UV Fused Silica", ct: 8.0 },
+          { name: "LB4661 (f=35.0)", mat: "UV Fused Silica", ct: 6.0 },
+          { name: "LB4282 (f=50.0)", mat: "UV Fused Silica", ct: 6.0 },
+          { name: "LB4713 (f=75.0)", mat: "UV Fused Silica", ct: 4.2 },
+          { name: "LB4936 (f=100.0)", mat: "UV Fused Silica", ct: 3.2 },
+          { name: "LB4069 (f=150.0)", mat: "UV Fused Silica", ct: 2.5 },
+          { name: "LB4455 (f=200.0)", mat: "UV Fused Silica", ct: 2.3 },
+          { name: "LB4821 (f=500.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LB4512 (f=1000.0)", mat: "UV Fused Silica", ct: 2.0 },
+        ],
+        "Plano-Concave": [
+          { name: "LC1971 (f=-25.4)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1060 (f=-30.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1120 (f=-50.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1715 (f=-100.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1611 (f=-150.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1975 (f=-200.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1054 (f=-250.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1611 (f=-500.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC1285 (f=-1000.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LC4074 (f=-25.4)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LC4232 (f=-30.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LC1258 (f=-50.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LC4573 (f=-75.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LC4252 (f=-100.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LC4680 (f=-200.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LC4175 (f=-500.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LC4273 (f=-1000.0)", mat: "UV Fused Silica", ct: 2.0 },
+        ],
+        "Bi-Concave": [
+          { name: "LD1464 (f=-25.4)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD1851 (f=-30.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD1166 (f=-50.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD1092 (f=-75.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD1227 (f=-100.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD1426 (f=-200.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD1462 (f=-500.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD1638 (f=-1000.0)", mat: "N-BK7", ct: 2.0 },
+          { name: "LD4123 (f=-25.4)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LD4938 (f=-30.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LD4298 (f=-50.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LD4482 (f=-75.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LD4797 (f=-100.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LD4582 (f=-200.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LD4830 (f=-500.0)", mat: "UV Fused Silica", ct: 2.0 },
+          { name: "LD4720 (f=-1000.0)", mat: "UV Fused Silica", ct: 2.0 },
+        ],
+        "Mounted Asphere": [
+          { name: "C110TMD-B (f=6.24)", mat: "D-ZK3", ct: 3.4 },
+          { name: "C220TMD-B (f=11.0)", mat: "D-ZK3", ct: 2.2 },
+          { name: "C230TMD-B (f=4.51)", mat: "D-ZK3", ct: 2.9 },
+          { name: "C240TMD-B (f=8.0)", mat: "D-ZK3", ct: 3.5 },
+          { name: "C280TMD-B (f=18.4)", mat: "D-ZK3", ct: 2.2 },
+          { name: "C330TMD-B (f=3.1)", mat: "D-ZK3", ct: 2.4 },
+          { name: "C560TMD-B (f=13.86)", mat: "D-ZK3", ct: 2.0 },
+          { name: "C660TMD-B (f=2.97)", mat: "D-ZK3", ct: 2.2 },
+          { name: "A110TM-B (f=6.24)", mat: "S-LAH64", ct: 3.4 },
+          { name: "A220TM-B (f=11.0)", mat: "S-LAH64", ct: 2.2 },
+          { name: "A230TM-B (f=4.51)", mat: "S-LAH64", ct: 2.9 },
+          { name: "A240TM-B (f=8.0)", mat: "S-LAH64", ct: 3.5 },
+          { name: "A280TM-B (f=18.4)", mat: "S-LAH64", ct: 2.2 },
+          { name: "A390TM-B (f=4.6)", mat: "S-LAH64", ct: 2.8 },
+        ],
+        GRIN: [
+          { name: "GRIN2315A (f=1.94)", mat: "UV Fused Silica", ct: 4.42 },
+          { name: "GRIN2915 (f=2.91)", mat: "UV Fused Silica", ct: 5.12 },
+        ],
+      };
+
+      const polarizers = [
+        { name: "GL10 (10mm CA)", mat: "Calcite (o-ray)", ct: 12.0 },
+        { name: "GL5 (5mm CA)", mat: "Calcite (o-ray)", ct: 8.0 },
+        { name: "GLB10 (10mm CA)", mat: "a-BBO (o-ray)", ct: 12.0 },
+      ];
+
+      let paths = { 1: [], 2: [] };
+      let currentElementCache = {}; // Temporarily store derived properties for insertion
+
+      // Core Index Interpolation
+      function getIndex(mat, wl) {
+        const data = materials[mat];
+        if (!data) return 1.0;
+        const wls = Object.keys(data)
+          .map(Number)
+          .sort((a, b) => a - b);
+        if (wl <= wls[0]) return data[wls[0]];
+        if (wl >= wls[wls.length - 1]) return data[wls[wls.length - 1]];
+        for (let i = 0; i < wls.length - 1; i++) {
+          if (wl >= wls[i] && wl <= wls[i + 1]) {
+            const w1 = wls[i],
+              w2 = wls[i + 1];
+            const n1 = data[w1],
+              n2 = data[w2];
+            return n1 + ((n2 - n1) * (wl - w1)) / (w2 - w1);
+          }
+        }
+        return 1.0;
+      }
+
+      // Dynamic Form Builder
+      function buildForm() {
+        const type = document.getElementById("comp-type").value;
+        const container = document.getElementById("dynamic-options-container");
+        const lenInput = document.getElementById("comp-length");
+        const unitInput = document.getElementById("comp-unit");
+        let html = '<div class="flex gap-2 w-full">';
+
+        lenInput.disabled = false;
+        unitInput.disabled = false;
+        unitInput.value = "1";
+
+        if (type === "freespace") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Medium</label><select id="dyn-mat" class="bg-gray-700 rounded px-2 py-2 w-full"><option value="Air">Air</option></select></div>`;
+          lenInput.value = 100;
+        } else if (type === "fiber") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Fiber Type</label><select id="dyn-mat" class="bg-gray-700 rounded px-2 py-2 w-full">`;
+          ["SMF-28", "PM1550", "PM780", "780HP", "SM800"].forEach(
+            (f) => (html += `<option value="${f}">${f}</option>`),
+          );
+          html += `</select></div>`;
+          lenInput.value = 1;
+          unitInput.value = "1000";
+        } else if (type === "displacer") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Material</label><select id="dyn-mat" class="bg-gray-700 rounded px-2 py-2 w-full">`;
+          [
+            "Calcite (o-ray)",
+            "Calcite (e-ray)",
+            "a-BBO (o-ray)",
+            "a-BBO (e-ray)",
+          ].forEach((m) => (html += `<option value="${m}">${m}</option>`));
+          html += `</select></div>`;
+          lenInput.value = 10;
+        } else if (type === "beamsplitter") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Material</label><select id="dyn-mat" class="bg-gray-700 rounded px-2 py-2 w-full"><option value="N-BK7">N-BK7</option><option value="UV Fused Silica">UV Fused Silica</option></select></div>`;
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Cube Size (mm)</label><select id="dyn-sub" class="bg-gray-700 rounded px-2 py-2 w-full" onchange="syncLength()">`;
+          ["5", "10", "12.7", "20", "25.4"].forEach(
+            (s) => (html += `<option value="${s}">${s}</option>`),
+          );
+          html += `</select></div>`;
+          lenInput.disabled = true;
+          unitInput.disabled = true;
+          setTimeout(syncLength, 50);
+        } else if (type === "polarizer") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Glan-Taylor Model</label><select id="dyn-pol" class="bg-gray-700 rounded px-2 py-2 w-full" onchange="updatePolarizer()">`;
+          polarizers.forEach(
+            (p, i) => (html += `<option value="${i}">${p.name}</option>`),
+          );
+          html += `</select></div>`;
+          lenInput.disabled = true;
+          unitInput.disabled = true;
+          setTimeout(updatePolarizer, 50);
+        } else if (type === "waveplate") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Type</label><select id="dyn-wp-type" class="bg-gray-700 rounded px-2 py-2 w-full" onchange="updateWaveplate()"><option value="HWP">HWP</option><option value="QWP">QWP</option></select></div>`;
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Design λ</label><select id="dyn-wp-wl" class="bg-gray-700 rounded px-2 py-2 w-full" onchange="updateWaveplate()">`;
+          Object.keys(waveplates).forEach(
+            (w) => (html += `<option value="${w}">${w} nm</option>`),
+          );
+          html += `</select></div>`;
+          lenInput.disabled = true;
+          unitInput.disabled = true;
+          setTimeout(updateWaveplate, 50);
+        } else if (type === "lens") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Shape</label><select id="dyn-lens-cat" class="bg-gray-700 rounded px-2 py-2 w-full" onchange="updateLensSub()">`;
+          Object.keys(lenses).forEach(
+            (c) => (html += `<option value="${c}">${c}</option>`),
+          );
+          html += `</select></div>`;
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Model</label><select id="dyn-lens-mod" class="bg-gray-700 rounded px-2 py-2 w-full" onchange="updateLens()"></select></div>`;
+          lenInput.disabled = true;
+          unitInput.disabled = true;
+          setTimeout(updateLensSub, 50);
+        } else if (type === "custom") {
+          html += `<div class="flex-1 flex flex-col gap-1"><label class="text-sm text-gray-400">Material</label><select id="dyn-mat" class="bg-gray-700 rounded px-2 py-2 w-full">`;
+          Object.keys(materials)
+            .filter((m) => m !== "Air")
+            .forEach((m) => (html += `<option value="${m}">${m}</option>`));
+          html += `</select></div>`;
+          lenInput.value = 10;
+        }
+
+        html += "</div>";
+        container.innerHTML = html;
+      }
+
+      // Sub-routines for dynamic form mapping
+      function syncLength() {
+        document.getElementById("comp-length").value =
+          document.getElementById("dyn-sub").value;
+      }
+
+      function updatePolarizer() {
+        const p = polarizers[document.getElementById("dyn-pol").value];
+        document.getElementById("comp-length").value = p.ct;
+        currentElementCache = { mat: p.mat, name: "GT Pol: " + p.name };
+      }
+
+      function updateWaveplate() {
+        const t = document.getElementById("dyn-wp-type").value;
+        const w = document.getElementById("dyn-wp-wl").value;
+        const thickness = waveplates[w][t];
+        document.getElementById("comp-length").value = thickness;
+        currentElementCache = {
+          mat: "Quartz (o-ray)",
+          name: `ZO ${t} (${w}nm)`,
+        };
+      }
+
+      function updateLensSub() {
+        const cat = document.getElementById("dyn-lens-cat").value;
+        const modSelect = document.getElementById("dyn-lens-mod");
+        modSelect.innerHTML = lenses[cat]
+          .map((l, i) => `<option value="${i}">${l.name}</option>`)
+          .join("");
+        updateLens();
+      }
+
+      function updateLens() {
+        const cat = document.getElementById("dyn-lens-cat").value;
+        const l = lenses[cat][document.getElementById("dyn-lens-mod").value];
+        document.getElementById("comp-length").value = l.ct;
+        currentElementCache = { mat: l.mat, name: "Lens: " + l.name };
+      }
+
+      // Path Management
+      function addElement(pathNum) {
+        const type = document.getElementById("comp-type").value;
+        const lenInput = parseFloat(
+          document.getElementById("comp-length").value,
+        );
+        const unitMult = parseFloat(document.getElementById("comp-unit").value);
+
+        if (isNaN(lenInput) || lenInput <= 0) {
+          alert("Invalid length.");
+          return;
+        }
+
+        let mat = "Air",
+          name = "Element";
+        if (
+          [
+            "freespace",
+            "fiber",
+            "displacer",
+            "beamsplitter",
+            "custom",
+          ].includes(type)
+        ) {
+          mat = document.getElementById("dyn-mat").value;
+          name =
+            type === "freespace"
+              ? "Free Space"
+              : type === "beamsplitter"
+                ? `${document.getElementById("dyn-sub").value}mm ${mat} BS`
+                : mat;
+        } else {
+          mat = currentElementCache.mat;
+          name = currentElementCache.name;
+        }
+
+        paths[pathNum].push({
+          id: Math.random().toString(36).substr(2, 9),
+          type,
+          material: mat,
+          name,
+          length: lenInput * unitMult,
+        });
+        renderPaths();
+      }
+
+      function removeElement(pathNum, id) {
+        paths[pathNum] = paths[pathNum].filter((el) => el.id !== id);
+        renderPaths();
+      }
+
+      function clearPath(pathNum) {
+        paths[pathNum] = [];
+        renderPaths();
+      }
+
+      // Render & Math
+      function renderPaths() {
+        const wl =
+          parseFloat(document.getElementById("wavelength").value) || 1550;
+
+        [1, 2].forEach((p) => {
+          const listEl = document.getElementById(`path${p}-list`);
+          let html = "",
+            totalPhys = 0,
+            totalOPL = 0;
+
+          if (paths[p].length === 0) {
+            html = `<div class="text-gray-500 italic text-center mt-10">Path ${p} is empty</div>`;
+          } else {
+            paths[p].forEach((el, index) => {
+              const n = getIndex(el.material, wl);
+              const opl = el.length * n;
+              totalPhys += el.length;
+              totalOPL += opl;
+
+              html += `
+                            <div class="bg-gray-750 border border-gray-600 rounded p-3 mb-2 flex justify-between items-center group hover:bg-gray-700 transition">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-200"><span class="text-gray-500 mr-2">#${index + 1}</span>${el.name}</div>
+                                    <div class="text-xs text-gray-400 mt-1">L: ${formatNum(el.length)} mm | n: ${n.toFixed(4)} | OPL: ${formatNum(opl)} mm</div>
+                                </div>
+                                <button onclick="removeElement(${p}, '${el.id}')" class="text-red-400 hover:text-red-300 px-2 py-1 bg-gray-800 rounded opacity-50 group-hover:opacity-100 transition">✕</button>
+                            </div>
+                        `;
+            });
+          }
+
+          listEl.innerHTML = html;
+          document.getElementById(`p${p}-phys`).innerText =
+            formatNum(totalPhys) + " mm";
+          document.getElementById(`p${p}-opl`).innerText =
+            formatNum(totalOPL) + " mm";
+          document.getElementById(`p${p}-time`).innerText = formatTime(
+            totalOPL / C,
+          );
+        });
+
+        calculateDelta(wl);
+      }
+
+      function calculateDelta(wl) {
+        const p1 = calculateTotals(1, wl);
+        const p2 = calculateTotals(2, wl);
+        document.getElementById("delta-phys").innerText =
+          formatNum(p1.phys - p2.phys, true) + " mm";
+        document.getElementById("delta-opl").innerText =
+          formatNum(p1.opl - p2.opl, true) + " mm";
+        document.getElementById("delta-time").innerText = formatTime(
+          p1.time - p2.time,
+          true,
+        );
+      }
+
+      function calculateTotals(pathNum, wl) {
+        let phys = 0,
+          opl = 0;
+        paths[pathNum].forEach((el) => {
+          phys += el.length;
+          opl += el.length * getIndex(el.material, wl);
+        });
+        return { phys, opl, time: opl / C };
+      }
+
+      // Utils & Save/Load
+      function formatNum(val, forceSign = false) {
+        let str = Math.abs(val).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 3,
+        });
+        if (forceSign) return (val > 0 ? "+" : val < 0 ? "-" : " ") + str;
+        return str;
+      }
+
+      function formatTime(ps, forceSign = false) {
+        let val = Math.abs(ps),
+          unit = "ps";
+        if (val > 10000) {
+          val /= 1000;
+          unit = "ns";
+        }
+        let str =
+          val.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 3,
+          }) +
+          " " +
+          unit;
+        if (forceSign) return (ps > 0 ? "+" : ps < 0 ? "-" : " ") + str;
+        return str;
+      }
+
+      function saveConfig() {
+        const data = {
+          paths: paths,
+          wavelength: document.getElementById("wavelength").value,
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "ruqu_opl_setup.json";
+        a.click();
+      }
+
+      function loadConfig(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const data = JSON.parse(e.target.result);
+            if (data.paths) paths = data.paths;
+            if (data.wavelength)
+              document.getElementById("wavelength").value = data.wavelength;
+            renderPaths();
+          } catch (err) {
+            alert("Invalid file format");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      // Init
+      buildForm();
+      renderPaths();
+    </script>
+  </body>
+</html>

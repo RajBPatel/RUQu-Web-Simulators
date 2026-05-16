@@ -19,7 +19,7 @@
     </script>
   </head>
   <body class="bg-gray-950 text-gray-100 font-sans min-h-screen p-8">
-    <div class="max-w-7xl mx-auto">
+    <div class="max-w-[1600px] mx-auto">
       <header class="mb-12 text-center border-b border-gray-800 pb-8">
         <h1 class="text-4xl font-bold text-white mb-4">
           <span class="text-blue-500">◆</span> RUQu: Physics & Quantum
@@ -31,10 +31,30 @@
         </p>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Updated Grid: uses auto-fit and minmax to dynamically expand horizontally and use all available width -->
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
+        <!-- NEW CARD: OPL Calculator -->
+        <a
+          href="OPLcalc.html"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-yellow-500 rounded-xl p-6 shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group"
+        >
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-2xl">📏</span>
+            <h2
+              class="text-xl font-semibold text-gray-100 group-hover:text-yellow-400 transition-colors"
+            >
+              OPL & Time Calculator
+            </h2>
+          </div>
+          <p class="text-gray-400 text-sm flex-grow">
+            Calculate Optical Path Length and Time of Flight for ultrafast
+            setups dynamically using varying fibers, waveplates, and lenses.
+          </p>
+        </a>
+
         <a
           href="GaussianBeam.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-blue-500 rounded-xl p-6 shadow-lg hover:shadow-blue-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-blue-500 rounded-xl p-6 shadow-lg hover:shadow-blue-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">🔦</span>
@@ -44,7 +64,7 @@
               Gaussian Beam Simulator
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Interactive 2D propagation simulator with lenses, mirrors,
             dielectric slabs, and waist-fitting algorithms.
           </p>
@@ -52,7 +72,7 @@
 
         <a
           href="GaussianBeam_FibreCoupling.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-green-500 rounded-xl p-6 shadow-lg hover:shadow-green-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-green-500 rounded-xl p-6 shadow-lg hover:shadow-green-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">🎯</span>
@@ -62,7 +82,7 @@
               Fiber Coupling Optimizer
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Optimize coupling efficiency into various optical fibers using
             idealized or thick lenses with auto-coupling algorithms.
           </p>
@@ -70,7 +90,7 @@
 
         <a
           href="Waveplate polz calculator.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-purple-500 rounded-xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-purple-500 rounded-xl p-6 shadow-lg hover:shadow-purple-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">🌐</span>
@@ -80,7 +100,7 @@
               Poincaré Sphere Simulator
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Visualize polarization states and waveplate transformations (QWP,
             HWP) in real-time on a 3D Poincaré sphere.
           </p>
@@ -88,7 +108,7 @@
 
         <a
           href="Photon number distribution calculator.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-blue-500 rounded-xl p-6 shadow-lg hover:shadow-blue-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-blue-500 rounded-xl p-6 shadow-lg hover:shadow-blue-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">📊</span>
@@ -98,7 +118,7 @@
               Photon Number Distribution
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Calculate and visualize the probability distribution of detecting
             $n$ photons for Coherent, Thermal, and Squeezed states.
           </p>
@@ -106,7 +126,7 @@
 
         <a
           href="photon-atten.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-teal-500 rounded-xl p-6 shadow-lg hover:shadow-teal-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-teal-500 rounded-xl p-6 shadow-lg hover:shadow-teal-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">📉</span>
@@ -116,7 +136,7 @@
               Attenuated Photon Calculator
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Calculate attenuated mean photon numbers, effective peak power, and
             visualize quantum distributions based on added dB attenuation.
           </p>
@@ -124,7 +144,7 @@
 
         <a
           href="PPKTP Waveguide Walkoff and HOM simulator.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-red-500 rounded-xl p-6 shadow-lg hover:shadow-red-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-red-500 rounded-xl p-6 shadow-lg hover:shadow-red-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">🌊</span>
@@ -134,7 +154,7 @@
               PPKTP Walkoff & HOM
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Simulate Type-II SPDC featuring Symmetric Group Velocity Matching,
             Joint Spectral Intensity, and Hong-Ou-Mandel dips.
           </p>
@@ -142,7 +162,7 @@
 
         <a
           href="Pulse-bandwidth-power calculator.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-orange-500 rounded-xl p-6 shadow-lg hover:shadow-orange-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-orange-500 rounded-xl p-6 shadow-lg hover:shadow-orange-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">⚡</span>
@@ -152,7 +172,7 @@
               Pulse & Power Calculator
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Explore Time-Bandwidth products and calculate peak power, intensity,
             and fluence for various laser pulse shapes.
           </p>
@@ -160,7 +180,7 @@
 
         <a
           href="Error calculator.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl p-6 shadow-lg hover:shadow-indigo-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl p-6 shadow-lg hover:shadow-indigo-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">🧮</span>
@@ -170,7 +190,7 @@
               Error Propagation
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Symbolically calculate partial derivatives and apply the general
             error propagation formula directly from LaTeX inputs.
           </p>
@@ -178,7 +198,7 @@
 
         <a
           href="Heralding.html"
-          class="block bg-gray-900 border border-gray-800 hover:border-pink-500 rounded-xl p-6 shadow-lg hover:shadow-pink-500/20 transition-all duration-200 group"
+          class="block flex flex-col h-full bg-gray-900 border border-gray-800 hover:border-pink-500 rounded-xl p-6 shadow-lg hover:shadow-pink-500/20 transition-all duration-200 group"
         >
           <div class="flex items-center gap-3 mb-3">
             <span class="text-2xl">🔔</span>
@@ -188,7 +208,7 @@
               Fock State Heralding
             </h2>
           </div>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400 text-sm flex-grow">
             Analyze bi-directional heralding efficiencies and conditional state
             collapse across asymmetric channels.
           </p>
