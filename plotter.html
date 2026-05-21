@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RUQu Quick Plotter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              gray: {
+                850: "#1f2937",
+                900: "#111827",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <!-- PapaParse for robust CSV/TSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Plotly.js for charting and exporting -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  </head>
+  <body
+    class="bg-gray-900 text-gray-100 font-sans h-screen flex flex-col overflow-hidden"
+  >
+    <!-- Header -->
+    <header
+      class="bg-gray-800 border-b border-gray-700 p-4 shadow-sm z-10 flex justify-between items-center"
+    >
+      <h1 class="text-2xl font-bold text-blue-400 flex items-center gap-2">
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+          ></path>
+        </svg>
+        RUQu Quick Plotter
+      </h1>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+      <!-- Left Sidebar: Controls -->
+      <aside
+        class="w-[420px] bg-gray-850 border-r border-gray-700 p-6 overflow-y-auto flex flex-col gap-6 shadow-xl z-0 custom-scrollbar"
+      >
+        <!-- Step 1: Input Data -->
+        <section class="flex flex-col gap-3">
+          <h2
+            class="text-lg font-semibold border-b border-gray-700 pb-1 text-gray-200"
+          >
+            1. Data Source
+          </h2>
+
+          <div>
+            <label class="block text-sm text-gray-400 mb-1"
+              >Open CSV/TXT File</label
+            >
+            <input
+              type="file"
+              id="fileInput"
+              accept=".csv, .txt, .tsv"
+              class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-gray-800 border border-gray-700 rounded p-1"
+            />
+          </div>
+
+          <div class="relative my-1">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+              <div class="w-full border-t border-gray-700"></div>
+            </div>
+            <div class="relative flex justify-center">
+              <span
+                class="bg-gray-850 px-2 text-xs text-gray-500 font-medium uppercase tracking-wider"
+                >OR Paste Data</span
+              >
+            </div>
+          </div>
+
+          <div>
+            <textarea
+              id="csvData"
+              rows="4"
+              class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y placeholder-gray-600"
+              placeholder="Paste spreadsheet data here...&#10;Time, Value&#10;1, 10&#10;2, 100"
+            ></textarea>
+          </div>
+        </section>
+
+        <!-- Step 2: Parse Data -->
+        <section class="flex flex-col gap-3">
+          <h2
+            class="text-lg font-semibold border-b border-gray-700 pb-1 text-gray-200"
+          >
+            2. Parsing Options
+          </h2>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Delimiter</label>
+              <select
+                id="delimiter"
+                class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="auto">Auto-detect</option>
+                <option value=",">Comma (,)</option>
+                <option value="\t">Tab</option>
+                <option value="custom">Custom...</option>
+              </select>
+            </div>
+            <div id="customDelimContainer" class="hidden">
+              <label class="block text-sm text-gray-400 mb-1"
+                >Custom Char</label
+              >
+              <input
+                type="text"
+                id="customDelim"
+                maxlength="1"
+                class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 cursor-pointer mt-1">
+            <input
+              type="checkbox"
+              id="hasHeader"
+              checked
+              class="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500"
+            />
+            <span class="text-sm text-gray-300">First row contains labels</span>
+          </label>
+
+          <button
+            id="btnParse"
+            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded transition-colors shadow-lg"
+          >
+            Load & Parse Data
+          </button>
+          <div
+            id="parseStatus"
+            class="text-xs text-green-400 hidden mt-[-0.5rem]"
+          >
+            Data parsed successfully!
+          </div>
+        </section>
+
+        <!-- Step 3: Graph Setup -->
+        <section class="flex flex-col gap-3">
+          <h2
+            class="text-lg font-semibold border-b border-gray-700 pb-1 text-gray-200"
+          >
+            3. Graph Setup
+          </h2>
+
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Graph Type</label>
+            <select
+              id="chartType"
+              class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none plot-trigger"
+            >
+              <option value="scatter">Line / Scatter</option>
+              <option value="bar">Bar Chart</option>
+              <option value="pie">Pie Chart</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">X-Axis Data</label>
+            <select
+              id="xAxis"
+              class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:opacity-50 plot-trigger"
+              disabled
+            >
+              <option>Parse data first...</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-400 mb-1"
+              >Y-Axis Data (Ctrl/Cmd+Click for multiple)</label
+            >
+            <select
+              id="yAxis"
+              multiple
+              class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none h-20 disabled:opacity-50 plot-trigger"
+              disabled
+            >
+              <option>Parse data first...</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Step 4: Customization -->
+        <section class="flex flex-col gap-3 pb-4">
+          <h2
+            class="text-lg font-semibold border-b border-gray-700 pb-1 text-gray-200"
+          >
+            4. Customize & Format
+          </h2>
+
+          <!-- Titles -->
+          <div class="grid grid-cols-1 gap-3">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1"
+                >Main Graph Title</label
+              >
+              <input
+                type="text"
+                id="customTitle"
+                class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none plot-trigger"
+                placeholder="Leave blank to hide"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-gray-400 mb-1"
+                  >X-Axis Label</label
+                >
+                <input
+                  type="text"
+                  id="customXTitle"
+                  class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none plot-trigger"
+                  placeholder="Auto"
+                />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-400 mb-1"
+                  >Y-Axis Label</label
+                >
+                <input
+                  type="text"
+                  id="customYTitle"
+                  class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none plot-trigger"
+                  placeholder="Auto"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Scales -->
+          <div class="grid grid-cols-2 gap-3 mt-1">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1"
+                >X-Axis Scale</label
+              >
+              <select
+                id="xScale"
+                class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none plot-trigger"
+              >
+                <option value="linear">Linear</option>
+                <option value="log">Log10</option>
+                <option value="ln">Ln (Base e)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1"
+                >Y-Axis Scale</label
+              >
+              <select
+                id="yScale"
+                class="w-full bg-gray-800 border border-gray-700 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none plot-trigger"
+              >
+                <option value="linear">Linear</option>
+                <option value="log">Log10</option>
+                <option value="ln">Ln (Base e)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Colors -->
+          <div class="mt-2">
+            <label class="block text-xs text-gray-400 mb-2">Theme Colors</label>
+            <div class="grid grid-cols-4 gap-2">
+              <div class="flex flex-col items-center gap-1">
+                <input
+                  type="color"
+                  id="colorPlot"
+                  value="#1f2937"
+                  class="w-full h-8 cursor-pointer bg-gray-800 border border-gray-700 rounded p-0.5 plot-trigger"
+                  title="Plot Area Background"
+                />
+                <span class="text-[10px] text-gray-500">Plot Bg</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <input
+                  type="color"
+                  id="colorPaper"
+                  value="#111827"
+                  class="w-full h-8 cursor-pointer bg-gray-800 border border-gray-700 rounded p-0.5 plot-trigger"
+                  title="Outer Paper Background"
+                />
+                <span class="text-[10px] text-gray-500">Paper Bg</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <input
+                  type="color"
+                  id="colorLine"
+                  value="#3b82f6"
+                  class="w-full h-8 cursor-pointer bg-gray-800 border border-gray-700 rounded p-0.5 plot-trigger"
+                  title="Primary Data Color"
+                />
+                <span class="text-[10px] text-gray-500">Data Line</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <input
+                  type="color"
+                  id="colorFont"
+                  value="#e5e7eb"
+                  class="w-full h-8 cursor-pointer bg-gray-800 border border-gray-700 rounded p-0.5 plot-trigger"
+                  title="Text & Axis Color"
+                />
+                <span class="text-[10px] text-gray-500">Text</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            id="btnPlot"
+            class="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 rounded transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+            disabled
+          >
+            Render Graph
+          </button>
+        </section>
+      </aside>
+
+      <!-- Right Side: Chart Area -->
+      <section class="flex-1 bg-gray-900 p-6 flex flex-col relative">
+        <!-- Export Controls -->
+        <div class="absolute top-8 right-8 flex gap-3 z-10">
+          <button
+            id="btnExportPNG"
+            class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs px-3 py-1.5 rounded transition-colors disabled:opacity-50 flex items-center gap-2 shadow"
+            disabled
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              ></path>
+            </svg>
+            PNG
+          </button>
+          <button
+            id="btnExportSVG"
+            class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-xs px-3 py-1.5 rounded transition-colors disabled:opacity-50 flex items-center gap-2 shadow"
+            disabled
+          >
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              ></path>
+            </svg>
+            SVG
+          </button>
+        </div>
+
+        <!-- Plot Container -->
+        <div
+          id="plotContainer"
+          class="flex-1 border border-gray-700 rounded-lg shadow-inner overflow-hidden flex items-center justify-center relative transition-colors duration-200"
+          style="background-color: #111827"
+        >
+          <div
+            id="emptyState"
+            class="text-gray-500 text-center flex flex-col items-center gap-2"
+          >
+            <svg
+              class="w-16 h-16 opacity-50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              ></path>
+            </svg>
+            <p>Load data and click "Render Graph" to begin</p>
+          </div>
+          <div id="plot" class="w-full h-full absolute inset-0 hidden"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // DOM Elements
+      const fileInput = document.getElementById("fileInput");
+      const csvDataInput = document.getElementById("csvData");
+      const delimiterSelect = document.getElementById("delimiter");
+      const customDelimContainer = document.getElementById(
+        "customDelimContainer",
+      );
+      const customDelimInput = document.getElementById("customDelim");
+      const hasHeaderCheck = document.getElementById("hasHeader");
+
+      const btnParse = document.getElementById("btnParse");
+      const parseStatus = document.getElementById("parseStatus");
+
+      const xAxisSelect = document.getElementById("xAxis");
+      const yAxisSelect = document.getElementById("yAxis");
+      const chartTypeSelect = document.getElementById("chartType");
+      const btnPlot = document.getElementById("btnPlot");
+
+      // Customization Elements
+      const customTitle = document.getElementById("customTitle");
+      const customXTitle = document.getElementById("customXTitle");
+      const customYTitle = document.getElementById("customYTitle");
+      const xScaleSelect = document.getElementById("xScale");
+      const yScaleSelect = document.getElementById("yScale");
+      const colorPlot = document.getElementById("colorPlot");
+      const colorPaper = document.getElementById("colorPaper");
+      const colorLine = document.getElementById("colorLine");
+      const colorFont = document.getElementById("colorFont");
+
+      const btnExportPNG = document.getElementById("btnExportPNG");
+      const btnExportSVG = document.getElementById("btnExportSVG");
+      const plotContainer = document.getElementById("plotContainer");
+      const plotDiv = document.getElementById("plot");
+      const emptyState = document.getElementById("emptyState");
+
+      // Global State
+      let parsedData = [];
+      let headers = [];
+      let isGraphRendered = false;
+
+      // --- Event Listeners ---
+
+      // 1. File Upload
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          csvDataInput.value = event.target.result;
+        };
+        reader.readAsText(file);
+      });
+
+      // Toggle Custom Delimiter
+      delimiterSelect.addEventListener("change", (e) => {
+        if (e.target.value === "custom")
+          customDelimContainer.classList.remove("hidden");
+        else customDelimContainer.classList.add("hidden");
+      });
+
+      // 2. Parse Data
+      btnParse.addEventListener("click", () => {
+        const rawData = csvDataInput.value.trim();
+        if (!rawData) return alert("Please paste data or open a file first.");
+
+        const delimChoice = delimiterSelect.value;
+        const hasHeader = hasHeaderCheck.checked;
+
+        let parseConfig = {
+          header: hasHeader,
+          skipEmptyLines: true,
+          dynamicTyping: true,
+        };
+
+        if (delimChoice === "custom")
+          parseConfig.delimiter = customDelimInput.value;
+        else if (delimChoice !== "auto") parseConfig.delimiter = delimChoice;
+
+        const results = Papa.parse(rawData, parseConfig);
+
+        if (results.errors.length > 0 && results.data.length === 0) {
+          alert("Error parsing data. Please check delimiter settings.");
+          return;
+        }
+
+        if (hasHeader) {
+          headers = results.meta.fields;
+          parsedData = results.data;
+        } else {
+          const colCount = results.data[0].length;
+          headers = Array.from(
+            { length: colCount },
+            (_, i) => `Column ${i + 1}`,
+          );
+          parsedData = results.data.map((row) => {
+            let obj = {};
+            row.forEach((val, i) => {
+              obj[`Column ${i + 1}`] = val;
+            });
+            return obj;
+          });
+        }
+
+        populateDropdowns();
+
+        parseStatus.classList.remove("hidden");
+        setTimeout(() => parseStatus.classList.add("hidden"), 3000);
+        xAxisSelect.disabled = false;
+        yAxisSelect.disabled = false;
+        btnPlot.disabled = false;
+      });
+
+      function populateDropdowns() {
+        xAxisSelect.innerHTML = "";
+        yAxisSelect.innerHTML = "";
+
+        headers.forEach((header, index) => {
+          const optX = document.createElement("option");
+          optX.value = header;
+          optX.textContent = header;
+          xAxisSelect.appendChild(optX);
+
+          const optY = document.createElement("option");
+          optY.value = header;
+          optY.textContent = header;
+          if (index === 1) optY.selected = true;
+          yAxisSelect.appendChild(optY);
+        });
+      }
+
+      // Live updating: Re-render if graph exists and any trigger element changes
+      document.querySelectorAll(".plot-trigger").forEach((el) => {
+        el.addEventListener("change", () => {
+          if (isGraphRendered) renderPlot();
+        });
+        if (el.type === "color" || el.type === "text") {
+          el.addEventListener("input", () => {
+            if (isGraphRendered) renderPlot();
+          });
+        }
+      });
+
+      // 3. Render Plot Logic
+      btnPlot.addEventListener("click", () => {
+        renderPlot();
+        isGraphRendered = true;
+      });
+
+      function applyLnTransformation(dataArray) {
+        return dataArray.map((val) => {
+          if (typeof val !== "number") return val;
+          if (val <= 0) return null; // Ln of <= 0 is undefined
+          return Math.log(val);
+        });
+      }
+
+      function renderPlot() {
+        const xCol = xAxisSelect.value;
+        const yCols = Array.from(yAxisSelect.selectedOptions).map(
+          (opt) => opt.value,
+        );
+        const chartType = chartTypeSelect.value;
+
+        if (yCols.length === 0)
+          return alert("Please select at least one Y-Axis column.");
+
+        // Extract Customization Values
+        const tMain = customTitle.value;
+        let tX = customXTitle.value.trim() !== "" ? customXTitle.value : xCol;
+        let tY =
+          customYTitle.value.trim() !== ""
+            ? customYTitle.value
+            : yCols.length === 1
+              ? yCols[0]
+              : "Values";
+
+        const sclX = xScaleSelect.value;
+        const sclY = yScaleSelect.value;
+
+        const cPlotBg = colorPlot.value;
+        const cPaperBg = colorPaper.value;
+        const cPrimaryLine = colorLine.value;
+        const cFont = colorFont.value;
+
+        const isPie = chartType === "pie";
+        let traces = [];
+
+        // Process Data Vectors
+        let xData = parsedData.map((row) => row[xCol]);
+
+        // Handle native Ln transformation if requested
+        if (sclX === "ln") {
+          xData = applyLnTransformation(xData);
+          if (customXTitle.value.trim() === "") tX = `ln(${xCol})`;
+        }
+
+        if (isPie) {
+          traces = [
+            {
+              labels: xData,
+              values: parsedData.map((row) => row[yCols[0]]),
+              type: "pie",
+              marker: { line: { color: cPlotBg, width: 2 } },
+            },
+          ];
+        } else {
+          traces = yCols.map((yCol, index) => {
+            let yData = parsedData.map((row) => row[yCol]);
+            if (sclY === "ln") {
+              yData = applyLnTransformation(yData);
+              if (customYTitle.value.trim() === "" && yCols.length === 1)
+                tY = `ln(${yCol})`;
+            }
+
+            return {
+              x: xData,
+              y: yData,
+              name: yCol,
+              type: chartType,
+              mode: chartType === "scatter" ? "lines+markers" : "none",
+              // First trace uses selected color, others use Plotly's default palette extension
+              marker: index === 0 ? { color: cPrimaryLine } : undefined,
+              line: index === 0 ? { color: cPrimaryLine } : undefined,
+            };
+          });
+        }
+
+        // Layout Configuration
+        const layout = {
+          title: tMain,
+          paper_bgcolor: cPaperBg,
+          plot_bgcolor: cPlotBg,
+          font: { color: cFont },
+          margin: { t: tMain ? 60 : 40, r: 40, b: 60, l: 60 },
+          colorway: [
+            cPrimaryLine,
+            "#ef4444",
+            "#10b981",
+            "#f59e0b",
+            "#8b5cf6",
+            "#ec4899",
+            "#06b6d4",
+          ],
+          xaxis: {
+            title: isPie ? "" : tX,
+            type: sclX === "log" ? "log" : "linear", // Handle log10 natively
+            gridcolor: adjustBrightness(cPlotBg, 20),
+            zerolinecolor: adjustBrightness(cPlotBg, 40),
+          },
+          yaxis: {
+            title: isPie ? "" : tY,
+            type: sclY === "log" ? "log" : "linear", // Handle log10 natively
+            gridcolor: adjustBrightness(cPlotBg, 20),
+            zerolinecolor: adjustBrightness(cPlotBg, 40),
+          },
+          legend: { font: { color: cFont } },
+        };
+
+        const config = { responsive: true, displayModeBar: false };
+
+        plotContainer.style.backgroundColor = cPaperBg;
+        emptyState.classList.add("hidden");
+        plotDiv.classList.remove("hidden");
+
+        Plotly.react("plot", traces, layout, config);
+
+        btnExportPNG.disabled = false;
+        btnExportSVG.disabled = false;
+      }
+
+      // Helper: Lighten/Darken Hex colors slightly for grid lines based on background
+      function adjustBrightness(hex, percent) {
+        let r = parseInt(hex.substring(1, 3), 16);
+        let g = parseInt(hex.substring(3, 5), 16);
+        let b = parseInt(hex.substring(5, 7), 16);
+
+        // If background is very dark, lighten grid lines. If light, darken them.
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        const factor =
+          luminance > 0.5 ? (100 - percent) / 100 : (100 + percent) / 100;
+
+        r = Math.min(255, Math.max(0, Math.round(r * factor)));
+        g = Math.min(255, Math.max(0, Math.round(g * factor)));
+        b = Math.min(255, Math.max(0, Math.round(b * factor)));
+
+        return (
+          "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
+        );
+      }
+
+      // 4. Exports
+      btnExportPNG.addEventListener("click", () => {
+        Plotly.downloadImage(plotDiv, {
+          format: "png",
+          width: plotDiv.clientWidth,
+          height: plotDiv.clientHeight,
+          filename: "RUQu-plot",
+        });
+      });
+
+      btnExportSVG.addEventListener("click", () => {
+        Plotly.downloadImage(plotDiv, {
+          format: "svg",
+          width: plotDiv.clientWidth,
+          height: plotDiv.clientHeight,
+          filename: "RUQu-plot",
+        });
+      });
+
+      window.addEventListener("resize", () => {
+        if (isGraphRendered) Plotly.Plots.resize(plotDiv);
+      });
+    </script>
+
+    <style>
+      /* Keep sidebar scrollbar sleek in webkit */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #1f2937;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #374151;
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #4b5563;
+      }
+    </style>
+  </body>
+</html>
